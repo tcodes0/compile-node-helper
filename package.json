@@ -1,0 +1,41 @@
+{
+  "name": "compile-node-helper",
+  "version": "0.0.1",
+  "license": "AGPL-3.0",
+  "description": "Helps you compile Node.js from source by automating what should be automated",
+  "main": "dist/index.js",
+  "homepage": "https://github.com/Thomazella/compile-node-helper#readme",
+  "author": {
+    "name": "Raphael Thomazella",
+    "email": "thomazella9@gmail.com",
+    "url": "https://github.com/thomazella"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Thomazella/compile-node-helper.git"
+  },
+  "files": [
+    "dist"
+  ],
+  "bugs": {
+    "url": "https://github.com/Thomazella/compile-node-helper/issues"
+  },
+  "keywords": [
+    "node",
+    "bash",
+    "script",
+    "curl",
+    "compile"
+  ],
+  "scripts": {
+    "patch": "npm version patch && npm publish",
+    "minor": "npm version minor && npm publish",
+    "major": "npm version major && npm publish",
+    "postpublish": "git push origin master --follow-tags"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "shellcheck": "*",
+    "shfmt": "*"
+  }
+}

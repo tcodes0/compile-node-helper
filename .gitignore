@@ -1,0 +1,7 @@
+node_modules/*
+*old
+dist/*
+build/*
+.sass*
+.DS*
+*.log
