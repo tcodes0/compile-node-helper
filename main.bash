@@ -13,18 +13,15 @@ for name in ./deps/optar.sh ./deps/progress.sh ./deps/dbash/main.bash utils.bash
   source "$name" || bailout "Dependency $name failed. Try cloning the repo?"
 done
 
-if [ "$PWD" != "$TEMP_DIR" ]; then
-  cleanup
-else
-  cd "$HOME"
-  cleanup
-fi
-
+cleanup
 parse-options "$*"
+
+# Globals.
 TEMP_DIR="$HOME/.compile-node-helper-temp"
 [ -n "$version" ] && N_VERSION="$version"
+PAD="  "
 
-mkdir -p "$HOME/.compile-node-helper-temp"
+mkdir -p "$TEMP_DIR"
 
 ##############################
 ####  PROMPT FOR VERSION  ####
@@ -58,11 +55,11 @@ while [ ! -n "$N_VERSION" ]; do
         N_VERSION="$line_version"
       fi
 
-    elif [ "$LINES" -le 10 ] && [ "$LINES" != "0" ]; then
+    elif [ "$LINES" -le 30 ] && [ "$LINES" != "0" ]; then
       INDEX=1
       precho "\\n"
       while read -r few_version; do
-        color "  ${INDEX}) $few_version\\n"
+        color "${PAD}${INDEX}) $few_version\\n"
         ((INDEX += 1))
       done <selection.txt
       precho "\\n"
@@ -95,23 +92,78 @@ done
 precho "You selected $(color Node "$N_VERSION")"
 
 ##############################
-#######  DL & COMPILE  #######
+#########  DOWNLOAD  #########
 ##############################
 
-if [[ "$N_VERSION" =~ [[:digit:]]$ ]]; then
-  progress start "Downloading source code"
-  echo curl -L --silent "https://nodejs.org/dist/v${N_VERSION}/node-v${N_VERSION}.tar.gz" >"${N_VERSION}.tar.gz"
-  ZIP_NAME="${N_VERSION}.tar.gz"
-  progress finish "$?"
-else
-  progress start "Downloading source code"
-  curl -L --silent "https://nodejs.org/dist/${N_VERSION}">"${N_VERSION}"
-  ZIP_NAME="${N_VERSION}"
-  progress finish "$?"
+# strip leading v
+if [[ "$N_VERSION" =~ ^v ]]; then
+  N_VERSION=${N_VERSION#v}
 fi
 
-if [ "$(filesize "$ZIP_NAME")" -lt 1000 ]; then
-  color "  Warning\\n"
-  precho "File $ZIP_NAME seems too small to be source code."
-  precho "Download may have failed and fetched an html page instead"
+# don't download twice the same zip
+if [ ! -f "$N_VERSION.tar.gz" ] && [ ! -f "$N_VERSION" ]; then
+  if [[ "$N_VERSION" =~ [[:digit:]]$ ]]; then
+    progress start "Downloading source code"
+    ZIP_NAME="${N_VERSION}.tar.gz"
+    curl -L --silent "https://nodejs.org/dist/v${N_VERSION}/node-v${N_VERSION}.tar.gz" >"$ZIP_NAME"
+    progress finish "$?"
+  elif [[ "$N_VERSION" =~ ^latest ]]; then
+    bailout "Downloading with latest isn't supported atm. Sorry :(\\n"
+    # progress start "Downloading source code"
+    # curl -L --silent "https://nodejs.org/dist/${N_VERSION}/node-v${N_VERSION}.tar.gz" >"${N_VERSION}.tar.gz"
+    # ZIP_NAME="${N_VERSION}.tar.gz"
+    # progress finish "$?"
+  else
+    progress start "Downloading source code"
+    ZIP_NAME="${N_VERSION}"
+    curl -L --silent "https://nodejs.org/dist/${N_VERSION}" >"$ZIP_NAME"
+    progress finish "$?"
+  fi
+
+  # catch failed downloads
+  if [ -f "$ZIP_NAME" ]; then
+    if isDecimal "$(filesize "$ZIP_NAME")" && [ "$(filesize "$ZIP_NAME")" -lt 1000 ]; then
+      if grep --silent '<html' "$ZIP_NAME"; then
+        mv "$ZIP_NAME" "${N_VERSION}-error.html"
+        precho "Download failed and fetched an HTML page."
+        precho "You can download manually from https://nodejs.org/dist/"
+        bailout "404 or other download error\\n"
+      fi
+    fi
+  fi
 fi
+
+##############################
+##########  COMPILE  #########
+##############################
+
+precho "\\n"
+
+[ -n "$ZIP_NAME" ] && DIR_NAME=node-v${ZIP_NAME%.tar.gz}
+DIR_NAME=node-v${N_VERSION%.tar.gz}
+
+# don't extract twice the same zip
+if [ ! -d "$DIR_NAME" ]; then
+  tar xf 6.14.0.tar.gz
+fi
+
+cd "$DIR_NAME"
+if ! ./configure >/dev/null 2>&1; then
+  precho "To see errors and get help run: '${PWD}/configure'"
+  bailout "./configure didn't run successfully."
+fi
+
+# don't compile twice the same version
+if [ ! -f "./out/Release/node" ]; then
+  precho "Compilation takes a while and is CPU heavy."
+  progress start "Compiling"
+  make "-j$(sysctl -n hw.ncpu)" >/dev/null 2>&1
+  progress finish "$?"
+else
+  precho "Already compiled"
+fi
+
+##############################
+############ TEST  ###########
+##############################
+

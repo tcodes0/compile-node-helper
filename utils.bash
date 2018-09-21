@@ -1,6 +1,8 @@
 #! /usr/bin/env bash
 
-HUE=$((RANDOM % 56 + 112))
+set -e
+
+HUE=$((RANDOM % 56 + 184))
 
 bailout() {
   local message=$*
@@ -14,16 +16,12 @@ bailout() {
 }
 
 cleanup() {
-  unset N_VERSION LINES INDEX line_version few_version
-  local dir="$HOME/.compile-node-helper-temp"
-  if [ -d "$dir" ]; then
-    rm -rf "${dir:?}/*"
-  fi
+  unset N_VERSION LINES INDEX line_version few_version version
 }
 
 precho() {
   printf "\\033[38;05;251m"
-  echo -e "  $*"
+  echo -e "${PAD}$*"
   printf "\\033[0m"
 }
 
@@ -35,4 +33,9 @@ color() {
 
 filesize() {
   echo -en "$(du -k "$*" | cut -f1)"
+}
+
+isDecimal() {
+  [[ "$*" =~ ^[[:digit:]]+$ ]] && return
+  return 1
 }
