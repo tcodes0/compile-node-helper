@@ -53,7 +53,7 @@ while [ ! -n "$N_VERSION" ]; do
       if ! read -r; then
         exit "$?"
       fi
-      if [ "$REPLY" == "y" ] || [ "$REPLY" == "yes" ] || [ "$REPLY" == "Y" ] || [ "$REPLY" == "YES" ]; then
+      if repliedYes; then
         N_VERSION="$line_version"
       fi
 
@@ -61,7 +61,7 @@ while [ ! -n "$N_VERSION" ]; do
       INDEX=1
       precho "\\n"
       while read -r few_version; do
-        color "${PAD}${INDEX}) "
+        color "${PAD}${INDEX} "
         precho "$few_version"
         ((INDEX += 1))
       done <selection.txt
@@ -199,15 +199,15 @@ if [[ "$(uname -s)" =~ Darwin ]]; then
   precho "For more info run:"
   precho "'less +g\\/firewall ${PWD}/BUILDING.md'"
   precho "\\n"
-  color "${PAD}a) "
+  color "${PAD}a "
   precho "Authorize the script (your password will be required)."
-  color "${PAD}*) "
+  color "${PAD}* "
   precho "Run tests and get popups (it's not that bad)."
 else
   precho "\\n"
 fi
 
-color "${PAD}s) "
+color "${PAD}s "
 precho "Skip testing."
 precho "\\n"
 precho "Please type your selection. Type anything else to test."
@@ -246,7 +246,7 @@ color "${PAD}${PWD}/out/Release/node\\n"
 precho "Run 'node' to test the REPL? (y/n)"
 
 read -r
-if [ "$REPLY" == "y" ] || [ "$REPLY" == "yes" ] || [ "$REPLY" == "Y" ] || [ "$REPLY" == "YES" ]; then
+if repliedYes; then
   color "${PAD}node\\n"
   ./out/Release/node
 fi

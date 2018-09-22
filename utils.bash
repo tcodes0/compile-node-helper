@@ -49,3 +49,10 @@ pause() {
   precho "\\n"
   read -rt 2 || true;
 }
+
+repliedYes() {
+ if [ "$REPLY" == "y" ] || [ "$REPLY" == "yes" ] || [ "$REPLY" == "Y" ] || [ "$REPLY" == "YES" ]; then
+  return 0
+fi
+return 1
+}
