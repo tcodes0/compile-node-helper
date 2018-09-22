@@ -2,7 +2,7 @@
 
 set -e
 
-HUE=$((RANDOM % 56 + 184))
+HUE=$((RANDOM % 56 + 164))
 
 bailout() {
   local message=$*
@@ -38,4 +38,15 @@ filesize() {
 isDecimal() {
   [[ "$*" =~ ^[[:digit:]]+$ ]] && return
   return 1
+}
+
+clearAndPause() {
+  # precho "\\n"
+  read -rt 2 || true;
+  clear
+}
+
+pause() {
+  precho "\\n"
+  read -rt 2 || true;
 }

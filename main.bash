@@ -17,9 +17,9 @@ cleanup
 parse-options "$*"
 
 # Globals.
-TEMP_DIR="$HOME/.compile-node-helper-temp"
+TEMP_DIR="$HOME/.compile-node-helper"
 [ -n "$version" ] && N_VERSION="$version"
-PAD="  "
+PAD=""
 
 mkdir -p "$TEMP_DIR"
 
@@ -32,8 +32,8 @@ filter_non_link_tags='/^<a/!d'
 link_tags_to_strings='s/^<a [^>]+>([^<]+)<[/]a>.*$/\1/g'
 curl -L --silent https://nodejs.org/dist/ | gsed -Ee "$filter_non_link_tags" | gsed -Ee "$link_tags_to_strings" | tr -d / >download-options.txt
 
+clear
 while [ ! -n "$N_VERSION" ]; do
-  precho "\\n"
   precho "Please type a Node version to download."
   precho "Type 'all' too see all available ($(wc -l <download-options.txt | tr -d " ") versions)."
   precho "Or a partial string too see matches.\\n"
@@ -59,7 +59,8 @@ while [ ! -n "$N_VERSION" ]; do
       INDEX=1
       precho "\\n"
       while read -r few_version; do
-        color "${PAD}${INDEX}) $few_version\\n"
+        color "${PAD}${INDEX}) "
+        precho "$few_version"
         ((INDEX += 1))
       done <selection.txt
       precho "\\n"
@@ -90,6 +91,7 @@ while [ ! -n "$N_VERSION" ]; do
 done
 
 precho "You selected $(color Node "$N_VERSION")"
+clearAndPause
 
 ##############################
 #########  DOWNLOAD  #########
@@ -114,6 +116,7 @@ if [ ! -f "$N_VERSION.tar.gz" ] && [ ! -f "$N_VERSION" ]; then
     # ZIP_NAME="${N_VERSION}.tar.gz"
     # progress finish "$?"
   else
+    VERSION_IS_ZIP_NAME="true"
     progress start "Downloading source code"
     ZIP_NAME="${N_VERSION}"
     curl -L --silent "https://nodejs.org/dist/${N_VERSION}" >"$ZIP_NAME"
@@ -131,20 +134,36 @@ if [ ! -f "$N_VERSION.tar.gz" ] && [ ! -f "$N_VERSION" ]; then
       fi
     fi
   fi
+else
+  color "${PAD}Already downloaded"
 fi
+clearAndPause
+
+# manage naming differences
+[[ "$N_VERSION" =~ ^node-v ]] && VERSION_IS_ZIP_NAME="true"
+if [ ! -n "$ZIP_NAME" ]; then
+  if [ -n "$VERSION_IS_ZIP_NAME" ]; then
+    ZIP_NAME="$N_VERSION"
+  else
+    ZIP_NAME="${N_VERSION}.tar.gz"
+  fi
+fi
+
 
 ##############################
 ##########  COMPILE  #########
 ##############################
 
-precho "\\n"
-
-[ -n "$ZIP_NAME" ] && DIR_NAME=node-v${ZIP_NAME%.tar.gz}
-DIR_NAME=node-v${N_VERSION%.tar.gz}
+# manage naming differences
+if [ -n "$VERSION_IS_ZIP_NAME" ]; then
+  DIR_NAME="${N_VERSION%.tar.gz}"
+else
+  DIR_NAME="node-v${ZIP_NAME%.tar.gz}"
+fi
 
 # don't extract twice the same zip
 if [ ! -d "$DIR_NAME" ]; then
-  tar xf 6.14.0.tar.gz
+  tar xf "$ZIP_NAME"
 fi
 
 cd "$DIR_NAME"
@@ -155,15 +174,78 @@ fi
 
 # don't compile twice the same version
 if [ ! -f "./out/Release/node" ]; then
-  precho "Compilation takes a while and is CPU heavy."
+  precho "Note: Compilation takes a while and is CPU heavy."
+  precho "\\n"
   progress start "Compiling"
-  make "-j$(sysctl -n hw.ncpu)" >/dev/null 2>&1
+  make "-j$(sysctl -n hw.ncpu)" >/dev/null 2>&1 || progress finish "$?" && exit 1
   progress finish "$?"
 else
-  precho "Already compiled"
+  color "${PAD}Already compiled"
+fi
+clearAndPause
+
+##############################
+############ TEST ############
+##############################
+
+precho "After compiling it's recommended to run the test suite on the binary."
+
+# Mac only
+if [[ "$(uname -s)" =~ Darwin ]]; then
+  precho "On MacOS the tests make hundreds of firewall popups appear."
+  precho "Node ships with a script to add firewall rules and prevent that,"
+  precho "but it requires root access."
+  precho "For more info run:"
+  precho "'less +g\\/firewall ${PWD}/BUILDING.md'"
+  precho "\\n"
+  color "${PAD}a) "
+  precho "Authorize the script (your password will be required)."
+  color "${PAD}*) "
+  precho "Run tests and get popups (it's not that bad)."
+else
+  precho "\\n"
 fi
 
+color "${PAD}s) "
+precho "Skip testing."
+precho "\\n"
+precho "Please type your selection. Type anything else to test."
+precho "\\n"
+
+if ! read -r; then exit "$?"; fi
+precho "\\n"
+if [ "$REPLY" == "a" ] || [ "$REPLY" == "A" ]; then
+  sudo true
+  progress start "testing"
+  sudo ./tools/macos-firewall.sh
+  make test-only
+  progress finish "$?"
+elif [ "$REPLY" == "s" ] || [ "$REPLY" == "S" ]; then
+  color "${PAD}Skipping tests.\\n"
+else
+  progress start "testing"
+  make test-only
+  progress finish "$?"
+fi
+clearAndPause
+
 ##############################
-############ TEST  ###########
+######### WRAPPING UP ########
 ##############################
 
+progress total
+
+precho "\\n"
+color "${PAD}node --eval 'console.log(process.version)'\\n"
+./out/Release/node --eval 'console.log(process.version)'
+pause
+
+precho "Done. Node is here "
+color "${PAD}${PWD}/out/Release/node\\n"
+precho "Run 'node' to test the REPL? (y/n)"
+
+read -r
+if [ "$REPLY" == "y" ] || [ "$REPLY" == "yes" ] || [ "$REPLY" == "Y" ] || [ "$REPLY" == "YES" ]; then
+  color "${PAD}node\\n"
+  ./out/Release/node
+fi
