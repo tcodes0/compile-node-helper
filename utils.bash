@@ -41,7 +41,6 @@ isDecimal() {
 }
 
 clearAndPause() {
-  # precho "\\n"
   read -rt 2 || true;
   clear
 }

@@ -23,6 +23,8 @@ PAD=""
 
 mkdir -p "$TEMP_DIR"
 
+[ -n "$clean" ] && rm -rf "$TEMP_DIR" && exit 0
+
 ##############################
 ####  PROMPT FOR VERSION  ####
 ##############################
@@ -149,7 +151,6 @@ if [ ! -n "$ZIP_NAME" ]; then
   fi
 fi
 
-
 ##############################
 ##########  COMPILE  #########
 ##############################
@@ -240,7 +241,7 @@ color "${PAD}node --eval 'console.log(process.version)'\\n"
 ./out/Release/node --eval 'console.log(process.version)'
 pause
 
-precho "Done. Node is here "
+precho "Done. Node is here:"
 color "${PAD}${PWD}/out/Release/node\\n"
 precho "Run 'node' to test the REPL? (y/n)"
 
