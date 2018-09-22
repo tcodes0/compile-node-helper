@@ -16,7 +16,7 @@ bailout() {
 }
 
 cleanup() {
-  unset N_VERSION LINES INDEX line_version few_version version
+  unset N_VERSION LINES INDEX line_version few_version version test_fail DIR_NAME ZIP_NAME PAD HUE
 }
 
 precho() {

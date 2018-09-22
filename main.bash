@@ -8,7 +8,7 @@
 # exit on errors
 set -e
 
-for name in ./deps/optar.sh ./deps/progress.sh ./deps/dbash/main.bash utils.bash; do
+for name in ./deps/optar.sh ./deps/progress.sh utils.bash; do
   # shellcheck disable=SC1090
   source "$name" || bailout "Dependency $name failed. Try cloning the repo?"
 done
@@ -177,9 +177,12 @@ fi
 if [ ! -f "./out/Release/node" ]; then
   precho "Note: Compilation takes a while and is CPU heavy."
   precho "\\n"
+  # catch errors locally to stop spinner
+  set +e
   progress start "Compiling"
-  make "-j$(sysctl -n hw.ncpu)" >/dev/null 2>&1 || progress finish "$?" && exit 1
+  make "-j$(sysctl -n hw.ncpu)" >last-compile-stdout.txt 2>last-compile-stderr.txt || progress die
   progress finish "$?"
+  set -e
 else
   color "${PAD}Already compiled"
 fi
@@ -217,18 +220,37 @@ if ! read -r; then exit "$?"; fi
 precho "\\n"
 if [ "$REPLY" == "a" ] || [ "$REPLY" == "A" ]; then
   sudo true
+  set +e
   progress start "testing"
-  sudo ./tools/macos-firewall.sh
-  make test-only
+  sudo ./tools/macos-firewall.sh || progress die
+  make test-only || progress die
   progress finish "$?"
+  set -e
 elif [ "$REPLY" == "s" ] || [ "$REPLY" == "S" ]; then
   color "${PAD}Skipping tests.\\n"
 else
+  set +e
   progress start "testing"
-  make test-only
-  progress finish "$?"
+  if ! make "test-only" 1>test-stdout.txt 2>test-stderr.txt; then
+    if ! make "test" 1>test-stdout.txt 2>test-stderr.txt; then
+      test_fail="true"
+      progress error
+    fi
+  fi
+  [ ! -n "$test_fail" ] && echo progress finish "$?"
+  set -e
 fi
-clearAndPause
+if [ -n "$test_fail" ]; then
+  color "${PAD}Test suite exited with a failure status\\n"
+  precho "Test output may have some information on what went wrong"
+  precho "'less ${PWD}/test-stdout.txt'"
+  precho "'less ${PWD}/test-stderr.txt'"
+  precho "Hit return/enter to continue"
+  read -r;
+else
+  clearAndPause
+fi
+
 
 ##############################
 ######### WRAPPING UP ########
