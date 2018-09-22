@@ -17,3 +17,5 @@
   echo
   gsed -Ene 12,9999p <main.bash
 } >dist/main.bash
+
+chmod u+x dist/main.bash

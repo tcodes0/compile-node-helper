@@ -1,8 +1,6 @@
-language: node_js
-node_js:
-  - v8
+language: bash
 script:
-  - npm run lint && npm test -- --coverage
+  - npm run build
 cache:
   - yarn
 after_success:

@@ -5,37 +5,27 @@
   "description": "Helps you compile Node.js from source by automating what should be automated",
   "main": "dist/index.js",
   "homepage": "https://github.com/Thomazella/compile-node-helper#readme",
+  "private": true,
   "author": {
-    "name": "Raphael Thomazella",
-    "email": "thomazella9@gmail.com",
-    "url": "https://github.com/thomazella"
+  "name": "Raphael Thomazella",
+  "email": "thomazella9@gmail.com",
+  "url": "https://github.com/thomazella"
   },
   "repository": {
-    "type": "git",
-    "url": "https://github.com/Thomazella/compile-node-helper.git"
+  "type": "git",
+  "url": "https://github.com/Thomazella/compile-node-helper.git"
   },
-  "files": [
-    "dist"
-  ],
   "bugs": {
-    "url": "https://github.com/Thomazella/compile-node-helper/issues"
+  "url": "https://github.com/Thomazella/compile-node-helper/issues"
   },
   "keywords": [
-    "node",
-    "bash",
-    "script",
-    "curl",
-    "compile"
+  "node",
+  "bash",
+  "script",
+  "curl",
+  "compile"
   ],
-  "scripts": {
-    "patch": "npm version patch && npm publish",
-    "minor": "npm version minor && npm publish",
-    "major": "npm version major && npm publish",
-    "postpublish": "git push origin master --follow-tags"
-  },
+  "scripts": {},
   "dependencies": {},
-  "devDependencies": {
-    "shellcheck": "*",
-    "shfmt": "*"
-  }
+  "devDependencies": {}
 }
