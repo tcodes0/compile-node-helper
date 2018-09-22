@@ -41,18 +41,50 @@ isDecimal() {
 }
 
 clearAndPause() {
-  read -rt 2 || true;
+  read -rt 2 || true
   clear
 }
 
 pause() {
   precho "\\n"
-  read -rt 2 || true;
+  read -rt 2 || true
 }
 
 repliedYes() {
- if [ "$REPLY" == "y" ] || [ "$REPLY" == "yes" ] || [ "$REPLY" == "Y" ] || [ "$REPLY" == "YES" ]; then
-  return 0
-fi
-return 1
+  if [ "$REPLY" == "y" ] || [ "$REPLY" == "yes" ] || [ "$REPLY" == "Y" ] || [ "$REPLY" == "YES" ]; then
+    return 0
+  fi
+  return 1
+}
+
+printTools() {
+  precho <<<"
+  ### Unix/macOS
+    #### Prerequisites
+
+    * gcc and g++ 4.9.4 or newer, or
+    * clang and clang++ 3.4.2 or newer (macOS: latest Xcode Command Line Tools)
+    * Python 2.6 or 2.7
+    * GNU Make 3.81 or newer
+
+    On macOS, you will need to install the 'Xcode Command Line Tools' by running
+    'xcode-select --install'. This step will install 'clang', 'clang++', and
+    'make'.
+  "
+  precho "See '${PWD}/BUILDING.md'"
+}
+
+isMac(){
+  [[ "$(uname -s)" =~ Darwin ]] && return 0
+  return 1
+}
+
+isUnix(){
+  [[ "$(uname -s)" =~ Darwin ]] || [[ "$(uname -s)" =~ Linux ]] && return 0
+  return 1
+}
+
+isWindows(){
+  [[ ! "$(uname -s)" =~ Darwin ]] && [[ ! "$(uname -s)" =~ Linux ]] && return 0
+  return 1
 }

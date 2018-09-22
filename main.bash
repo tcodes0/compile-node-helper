@@ -10,7 +10,7 @@ set -e
 
 for name in ./deps/optar.sh ./deps/progress.sh utils.bash; do
   # shellcheck disable=SC1090
-  source "$name" || bailout "Dependency $name failed. Try cloning the repo?"
+  source "$name" || bailout "Dependency $name failed. Try cloning the repo?\\n"
 done
 
 cleanup
@@ -152,7 +152,57 @@ if [ ! -n "$ZIP_NAME" ]; then
 fi
 
 ##############################
-##########  COMPILE  #########
+####  SETUP COMPILATION  #####
+##############################
+
+# check for tooling
+if ! command -v gcc >/dev/null || ! command -v g++ >/dev/null; then
+  setup_failed_tool="true"
+  color "${PAD}Are 'gcc' and 'g++' installed?.\\n"
+fi
+if ! command -v clang >/dev/null || ! command -v clang++ >/dev/null; then
+  setup_failed_tool="true"
+  color "${PAD}Are 'clang' and 'clang++' installed?.\\n"
+fi
+if ! command -v python2.6 >/dev/null && ! command -v python2.7 >/dev/null; then
+  if ! python --version 2>&1 | grep --silent -e 2.6 -e 2.7; then
+    setup_failed_tool="true"
+    color "${PAD}Is 'python2.6' or 'python2.7' installed?.\\n"
+  fi
+fi
+if ! command -v make >/dev/null; then
+  setup_failed_tool="true"
+  color "${PAD}Is 'make' installed?.\\n"
+fi
+
+if [ -n "$setup_failed_tool" ]; then
+  color "${PAD}Failed to find some required compilation tools installed.\\n"
+  printTools
+  bailout "Compilation tools not present\\n"
+else
+  # check for versions
+  # setup_gcc_ver=? find out how gcc speaks
+  setup_clang_ver=$(clang --version 2>&1 | gsed -Ene /version/p | gsed -Ee 's/^.*version (.*) \(clang.*$/\1/' | tr -d .)
+  setup_make_ver=$(make -v | head -1 | gsed -Ee 's/^.*Make (.*)$/\1/' | tr -d .)
+
+  if [ ! "$setup_clang_ver" -ge 342 ]; then
+    setup_failed_version="true"
+    color "${PAD}clang is too old.\\n"
+  fi
+  if [ ! "$setup_make_ver" -ge 381 ]; then
+    setup_failed_version="true"
+    color "${PAD}make is too old.\\n"
+  fi
+
+  if [ -n "$setup_failed_version" ]; then
+    color "${PAD}Compilation tools are below minimum version.\\n"
+    printTools
+    bailout "Compilation tools are too old.\\n"
+  fi
+fi
+
+##############################
+#########  COMPILE  ##########
 ##############################
 
 # manage naming differences
@@ -170,7 +220,7 @@ fi
 cd "$DIR_NAME"
 if ! ./configure >/dev/null 2>&1; then
   precho "To see errors and get help run: '${PWD}/configure'"
-  bailout "./configure didn't run successfully."
+  bailout "./configure didn't run successfully.\\n"
 fi
 
 # don't compile twice the same version
@@ -194,8 +244,7 @@ clearAndPause
 
 precho "After compiling it's recommended to run the test suite on the binary."
 
-# Mac only
-if [[ "$(uname -s)" =~ Darwin ]]; then
+if isMac; then
   precho "On MacOS the tests make hundreds of firewall popups appear."
   precho "Node ships with a script to add firewall rules and prevent that,"
   precho "but it requires root access."
@@ -246,11 +295,10 @@ if [ -n "$test_fail" ]; then
   precho "'less ${PWD}/test-stdout.txt'"
   precho "'less ${PWD}/test-stderr.txt'"
   precho "Hit return/enter to continue"
-  read -r;
+  read -r
 else
   clearAndPause
 fi
-
 
 ##############################
 ######### WRAPPING UP ########
